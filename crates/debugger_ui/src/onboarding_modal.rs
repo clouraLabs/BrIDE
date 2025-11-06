@@ -8,10 +8,8 @@ use crate::DebugPanel;
 
 macro_rules! debugger_onboarding_event {
     ($name:expr) => {
-        telemetry::event!($name, source = "Debugger Onboarding");
     };
     ($name:expr, $($key:ident $(= $value:expr)?),+ $(,)?) => {
-        telemetry::event!($name, source = "Debugger Onboarding", $($key $(= $value)?),+);
     };
 }
 

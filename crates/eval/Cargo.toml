@@ -60,7 +60,6 @@ serde.workspace = true
 serde_json.workspace = true
 settings.workspace = true
 shellexpand.workspace = true
-telemetry.workspace = true
 terminal_view.workspace = true
 toml.workspace = true
 unindent.workspace = true

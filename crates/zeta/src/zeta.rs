@@ -3,7 +3,6 @@ mod init;
 mod input_excerpt;
 mod license_detection;
 mod onboarding_modal;
-mod onboarding_telemetry;
 mod rate_completion_modal;
 
 pub(crate) use completion_diff_element::*;
@@ -48,7 +47,6 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use telemetry_events::EditPredictionRating;
 use thiserror::Error;
 use util::ResultExt;
 use util::rel_path::RelPath;
@@ -508,10 +506,6 @@ impl Zeta {
 
             // record latency for ~1% of requests
             if rand::random::<u8>() <= 2 {
-                telemetry::event!(
-                    "Edit Prediction Request",
-                    context_latency = done_gathering_context_at
-                        .duration_since(buffer_snapshotted_at)
                         .as_millis(),
                     request_latency = received_response_at
                         .duration_since(done_gathering_context_at)
@@ -869,16 +863,7 @@ impl Zeta {
         cx: &mut Context<Self>,
     ) {
         self.rated_completions.insert(completion.id);
-        telemetry::event!(
-            "Edit Prediction Rated",
-            rating,
-            input_events = completion.input_events,
-            input_excerpt = completion.input_excerpt,
-            input_outline = completion.input_outline,
-            output_excerpt = completion.output_excerpt,
-            feedback
-        );
-        self.client.telemetry().flush_events().detach();
+        self.&Arc::new(()).flush_events().detach();
         cx.notify();
     }
 

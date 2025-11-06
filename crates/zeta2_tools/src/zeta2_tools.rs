@@ -17,7 +17,6 @@ use gpui::{
 };
 use language::{Buffer, DiskState};
 use ordered_float::OrderedFloat;
-use project::{Project, WorktreeId, telemetry_snapshot::TelemetrySnapshot};
 use ui::{ButtonLike, ContextMenu, ContextMenuEntry, DropdownMenu, KeyBinding, prelude::*};
 use ui_input::InputField;
 use util::{ResultExt, paths::PathStyle, rel_path::RelPath};
@@ -731,16 +730,6 @@ impl Zeta2Inspector {
                     Feedback::Positive => "positive",
                     Feedback::Negative => "negative",
                 };
-
-                telemetry::event!(
-                    "Zeta2 Prediction Rated",
-                    id = response.request_id,
-                    kind = kind,
-                    text = text,
-                    request = last_prediction.request,
-                    response = response,
-                    project_snapshot = project_snapshot,
-                );
             })
             .log_err();
         })

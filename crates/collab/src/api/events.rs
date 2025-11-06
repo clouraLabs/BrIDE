@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, OnceLock};
-use telemetry_events::{Event, EventRequestBody};
 use util::ResultExt;
 use uuid::Uuid;
 

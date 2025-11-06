@@ -2,7 +2,6 @@
 pub mod test;
 
 mod proxy;
-pub mod telemetry;
 pub mod user;
 pub mod zed_urls;
 
@@ -45,14 +44,12 @@ use std::{
     time::{Duration, Instant},
 };
 use std::{cmp, pin::Pin};
-use telemetry::Telemetry;
 use thiserror::Error;
 use tokio::net::TcpStream;
 use url::Url;
 use util::{ConnectionResult, ResultExt};
 
 pub use rpc::*;
-pub use telemetry_events::Event;
 pub use user::*;
 
 static ZED_SERVER_URL: LazyLock<Option<String>> =
@@ -141,7 +138,6 @@ impl Settings for ProxySettings {
 }
 
 pub fn init_settings(cx: &mut App) {
-    TelemetrySettings::register(cx);
     ClientSettings::register(cx);
     ProxySettings::register(cx);
 }
@@ -194,7 +190,6 @@ pub struct Client {
     peer: Arc<Peer>,
     http: Arc<HttpClientWithUrl>,
     cloud_client: Arc<CloudApiClient>,
-    telemetry: Arc<Telemetry>,
     credentials_provider: ClientCredentialsProvider,
     state: RwLock<ClientState>,
     handler_set: parking_lot::Mutex<ProtoMessageHandlerSet>,
@@ -508,20 +503,7 @@ impl<T: 'static> Drop for PendingEntitySubscription<T> {
     }
 }
 
-#[derive(Copy, Clone, Deserialize, Debug)]
-pub struct TelemetrySettings {
-    pub diagnostics: bool,
-    pub metrics: bool,
-}
 
-impl settings::Settings for TelemetrySettings {
-    fn from_settings(content: &SettingsContent) -> Self {
-        Self {
-            diagnostics: content.telemetry.as_ref().unwrap().diagnostics.unwrap(),
-            metrics: content.telemetry.as_ref().unwrap().metrics.unwrap(),
-        }
-    }
-}
 
 impl Client {
     pub fn new(
@@ -532,7 +514,6 @@ impl Client {
         Arc::new(Self {
             id: AtomicU64::new(0),
             peer: Peer::new(0),
-            telemetry: Telemetry::new(clock, http.clone(), cx),
             cloud_client: Arc::new(CloudApiClient::new(http.clone())),
             http,
             credentials_provider: ClientCredentialsProvider::new(cx),
@@ -695,7 +676,6 @@ impl Client {
                 }));
             }
             Status::SignedOut | Status::UpgradeRequired => {
-                self.telemetry.set_authenticated_user_info(None, false);
                 state._reconnect_task.take();
             }
             _ => {}
@@ -1264,8 +1244,8 @@ impl Client {
         let user_agent = http.user_agent().cloned();
         let credentials = credentials.clone();
         let rpc_url = self.rpc_url(http, release_channel);
-        let system_id = self.telemetry.system_id();
-        let metrics_id = self.telemetry.metrics_id();
+        let system_id = None;
+        let metrics_id = None;
         cx.spawn(async move |cx| {
             use HttpOrHttps::*;
 
@@ -1692,9 +1672,7 @@ impl Client {
         .ok();
     }
 
-    pub fn telemetry(&self) -> &Arc<Telemetry> {
-        &self.telemetry
-    }
+
 }
 
 impl ProtoClient for Client {

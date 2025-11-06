@@ -101,7 +101,6 @@ impl ProjectDiff {
         window: &mut Window,
         cx: &mut Context<Workspace>,
     ) {
-        telemetry::event!("Git Branch Diff Opened");
         let project = workspace.project().clone();
 
         let existing = workspace
@@ -134,10 +133,7 @@ impl ProjectDiff {
         entry: Option<GitStatusEntry>,
         window: &mut Window,
         cx: &mut Context<Workspace>,
-    ) {
-        telemetry::event!(
-            "Git Diff Opened",
-            source = if entry.is_some() {
+    ) { {
                 "Git Panel"
             } else {
                 "Action"

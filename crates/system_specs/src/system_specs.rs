@@ -1,6 +1,5 @@
 //! # system_specs
 
-use client::telemetry;
 pub use gpui::GpuSpecs;
 use gpui::{App, AppContext as _, SemanticVersion, Task, Window, actions};
 use human_bytes::human_bytes;

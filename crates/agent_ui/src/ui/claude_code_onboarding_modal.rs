@@ -10,10 +10,8 @@ use crate::agent_panel::{AgentPanel, AgentType};
 
 macro_rules! claude_code_onboarding_event {
     ($name:expr) => {
-        telemetry::event!($name, source = "ACP Claude Code Onboarding");
     };
     ($name:expr, $($key:ident $(= $value:expr)?),+ $(,)?) => {
-        telemetry::event!($name, source = "ACP Claude Code Onboarding", $($key $(= $value)?),+);
     };
 }
 

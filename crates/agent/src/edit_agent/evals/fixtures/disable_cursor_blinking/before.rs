@@ -6356,10 +6356,7 @@ impl Editor {
         let event_type = match accepted {
             true => "Edit Prediction Accepted",
             false => "Edit Prediction Discarded",
-        };
-        telemetry::event!(
-            event_type,
-            provider = provider.name(),
+        };,
             prediction_id = id,
             suggestion_accepted = accepted,
             file_extension = extension,
@@ -18292,15 +18289,7 @@ impl Editor {
             .language_settings(cx)
             .show_edit_predictions;
 
-        let project = project.read(cx);
-        telemetry::event!(
-            event_type,
-            file_extension,
-            vim_mode,
-            copilot_enabled,
-            copilot_enabled_for_language,
-            edit_predictions_provider,
-            is_via_ssh = project.is_via_ssh(),
+        let project = project.read(cx);,
         );
     }
 

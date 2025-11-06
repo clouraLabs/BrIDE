@@ -78,11 +78,6 @@ pub fn init(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
             let new_provider = all_language_settings(None, cx).edit_predictions.provider;
 
             if new_provider != provider {
-                telemetry::event!(
-                    "Edit Prediction Provider Changed",
-                    from = provider,
-                    to = new_provider,
-                );
 
                 provider = new_provider;
                 assign_edit_prediction_providers(

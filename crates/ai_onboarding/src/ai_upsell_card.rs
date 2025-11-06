@@ -193,10 +193,6 @@ impl RenderOnce for AiUpsellCard {
                                             .full_width()
                                             .style(ButtonStyle::Tinted(ui::TintColor::Accent))
                                             .on_click(move |_, _window, cx| {
-                                                telemetry::event!(
-                                                    "Upgrade To Pro Clicked",
-                                                    state = "young-account"
-                                                );
                                                 cx.open_url(&zed_urls::upgrade_to_zed_pro_url(cx))
                                             }),
                                     ),
@@ -219,10 +215,6 @@ impl RenderOnce for AiUpsellCard {
                                                 this.tab_index(tab_index)
                                             })
                                             .on_click(move |_, _window, cx| {
-                                                telemetry::event!(
-                                                    "Start Trial Clicked",
-                                                    state = "post-sign-in"
-                                                );
                                                 cx.open_url(&zed_urls::start_trial_url(cx))
                                             }),
                                     )
@@ -272,7 +264,6 @@ impl RenderOnce for AiUpsellCard {
                         .on_click({
                             let callback = self.sign_in.clone();
                             move |_, window, cx| {
-                                telemetry::event!("Start Trial Clicked", state = "pre-sign-in");
                                 callback(window, cx)
                             }
                         }),

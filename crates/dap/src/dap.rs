@@ -62,15 +62,6 @@ pub fn send_telemetry(scenario: &DebugScenario, location: TelemetrySpawnLocation
             .ok()
             .map(serde_json::to_value)
             .and_then(Result::ok);
-
-        telemetry::event!(
-            "Debugger Session Started",
-            spawn_location = location,
-            with_build_task = with_build_task,
-            kind = kind,
-            adapter = adapter_name,
-            dock_position = dock,
-        );
     })
     .detach();
 }

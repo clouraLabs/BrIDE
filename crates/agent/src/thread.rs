@@ -1175,11 +1175,7 @@ impl Thread {
         let mut intent = CompletionIntent::UserPrompt;
         loop {
             let request =
-                this.update(cx, |this, cx| this.build_completion_request(intent, cx))??;
-
-            telemetry::event!(
-                "Agent Thread Completion",
-                thread_id = this.read_with(cx, |this, _| this.id.to_string())?,
+                this.update(cx, |this, cx| this.build_completion_request(intent, cx))??;)?,
                 prompt_id = this.read_with(cx, |this, _| this.prompt_id.to_string())?,
                 model = model.telemetry_id(),
                 model_provider = model.provider_id().to_string(),
@@ -1361,10 +1357,7 @@ impl Thread {
                     ),
                 )));
             }
-            UsageUpdate(usage) => {
-                telemetry::event!(
-                    "Agent Thread Completion Usage Updated",
-                    thread_id = self.id.to_string(),
+            UsageUpdate(usage) => {,
                     prompt_id = self.prompt_id.to_string(),
                     model = self.model.as_ref().map(|m| m.telemetry_id()),
                     model_provider = self.model.as_ref().map(|m| m.provider_id().to_string()),

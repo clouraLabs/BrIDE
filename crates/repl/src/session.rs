@@ -235,12 +235,7 @@ impl Session {
             .editor
             .upgrade()
             .and_then(|editor| editor.read(cx).working_directory(cx))
-            .unwrap_or_else(temp_dir);
-
-        telemetry::event!(
-            "Kernel Status Changed",
-            kernel_language,
-            kernel_status = KernelStatus::Starting.to_string(),
+            .unwrap_or_else(temp_dir);,
             repl_session_id = cx.entity_id().to_string(),
         );
 
@@ -495,11 +490,7 @@ impl Session {
 
         match &message.content {
             JupyterMessageContent::Status(status) => {
-                self.kernel.set_execution_state(&status.execution_state);
-
-                telemetry::event!(
-                    "Kernel Status Changed",
-                    kernel_language = self.kernel_specification.language(),
+                self.kernel.set_execution_state(&status.execution_state);,
                     kernel_status = KernelStatus::from(&self.kernel).to_string(),
                     repl_session_id = cx.entity_id().to_string(),
                 );
@@ -550,13 +541,7 @@ impl Session {
         }
 
         let kernel_status = KernelStatus::from(&kernel).to_string();
-        let kernel_language = self.kernel_specification.language();
-
-        telemetry::event!(
-            "Kernel Status Changed",
-            kernel_language,
-            kernel_status,
-            repl_session_id = cx.entity_id().to_string(),
+        let kernel_language = self.kernel_specification.language();.to_string(),
         );
 
         self.kernel = kernel;

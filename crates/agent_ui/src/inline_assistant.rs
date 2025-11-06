@@ -14,7 +14,6 @@ use crate::{
 use agent::HistoryStore;
 use agent_settings::AgentSettings;
 use anyhow::{Context as _, Result};
-use client::telemetry::Telemetry;
 use collections::{HashMap, HashSet, VecDeque, hash_map};
 use editor::RowExt;
 use editor::SelectionEffects;
@@ -42,7 +41,6 @@ use parking_lot::Mutex;
 use project::{CodeAction, DisableAiSettings, LspAction, Project, ProjectTransaction};
 use prompt_store::{PromptBuilder, PromptStore};
 use settings::{Settings, SettingsStore};
-use telemetry_events::{AssistantEventData, AssistantKind, AssistantPhase};
 use terminal_view::{TerminalView, terminal_panel::TerminalPanel};
 use text::{OffsetRangeExt, ToPoint as _};
 use ui::prelude::*;
@@ -53,7 +51,6 @@ use zed_actions::agent::OpenSettings;
 pub fn init(
     fs: Arc<dyn Fs>,
     prompt_builder: Arc<PromptBuilder>,
-    telemetry: Arc<Telemetry>,
     cx: &mut App,
 ) {
     cx.set_global(InlineAssistant::new(fs, prompt_builder, telemetry));
@@ -96,7 +93,6 @@ pub struct InlineAssistant {
     confirmed_assists: HashMap<InlineAssistId, Entity<CodegenAlternative>>,
     prompt_history: VecDeque<String>,
     prompt_builder: Arc<PromptBuilder>,
-    telemetry: Arc<Telemetry>,
     fs: Arc<dyn Fs>,
 }
 
@@ -106,7 +102,6 @@ impl InlineAssistant {
     pub fn new(
         fs: Arc<dyn Fs>,
         prompt_builder: Arc<PromptBuilder>,
-        telemetry: Arc<Telemetry>,
     ) -> Self {
         Self {
             next_assist_id: InlineAssistId::default(),
@@ -493,7 +488,7 @@ impl InlineAssistant {
                     context_store.clone(),
                     project.clone(),
                     prompt_store.clone(),
-                    self.telemetry.clone(),
+                    Arc::new(()),
                     self.prompt_builder.clone(),
                     cx,
                 )
@@ -611,7 +606,7 @@ impl InlineAssistant {
                 context_store.clone(),
                 project,
                 prompt_store.clone(),
-                self.telemetry.clone(),
+                Arc::new(()),
                 self.prompt_builder.clone(),
                 cx,
             )
@@ -1064,7 +1059,7 @@ impl InlineAssistant {
                         error_message: None,
                         language_name: language_name.map(|name| name.to_proto()),
                     },
-                    Some(self.telemetry.clone()),
+                    None,
                     cx.http_client(),
                     model.model.api_key(cx),
                     cx.background_executor(),

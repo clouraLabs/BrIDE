@@ -86,7 +86,6 @@ use code_context_menus::{
 };
 use collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use convert_case::{Case, Casing};
-use dap::TelemetrySpawnLocation;
 use display_map::*;
 use edit_prediction::{EditPredictionProvider, EditPredictionProviderHandle};
 use editor_settings::{GoToDefinitionFallback, Minimap as MinimapSettings};
@@ -7563,10 +7562,7 @@ impl Editor {
         let event_type = match accepted {
             true => "Edit Prediction Accepted",
             false => "Edit Prediction Discarded",
-        };
-        telemetry::event!(
-            event_type,
-            provider = provider.name(),
+        };,
             prediction_id = id,
             suggestion_accepted = accepted,
             file_extension = extension,
@@ -21547,26 +21543,9 @@ impl Editor {
         let project = project.read(cx);
         let event_type = reported_event.event_type();
 
-        if let ReportEditorEvent::Saved { auto_saved } = reported_event {
-            telemetry::event!(
-                event_type,
-                type = if auto_saved {"autosave"} else {"manual"},
-                file_extension,
-                vim_mode,
-                copilot_enabled,
-                copilot_enabled_for_language,
-                edit_predictions_provider,
-                is_via_ssh = project.is_via_remote_server(),
+        if let ReportEditorEvent::Saved { auto_saved } = reported_event {,
             );
-        } else {
-            telemetry::event!(
-                event_type,
-                file_extension,
-                vim_mode,
-                copilot_enabled,
-                copilot_enabled_for_language,
-                edit_predictions_provider,
-                is_via_ssh = project.is_via_remote_server(),
+        } else {,
             );
         };
     }
