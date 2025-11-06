@@ -2299,6 +2299,15 @@ impl Editor {
                     if *local {
                         editor.hide_signature_help(cx, SignatureHelpHiddenBy::Escape);
                         editor.inline_blame_popover.take();
+                        let new_anchor = editor.scroll_manager.anchor();
+                        let snapshot = editor.snapshot(window, cx);
+                        editor.update_restoration_data(cx, move |data| {
+                            data.scroll_position = (
+                                new_anchor.top_row(snapshot.buffer_snapshot()),
+                                new_anchor.offset,
+                            );
+                        });
+
                         editor.post_scroll_update = cx.spawn_in(window, async move |editor, cx| {
                             cx.background_executor()
                                 .timer(Duration::from_millis(50))
@@ -2311,15 +2320,6 @@ impl Editor {
                                         InlayHintRefreshReason::NewLinesShown,
                                         cx,
                                     );
-
-                                    let new_anchor = editor.scroll_manager.anchor();
-                                    let snapshot = editor.snapshot(window, cx);
-                                    editor.update_restoration_data(cx, move |data| {
-                                        data.scroll_position = (
-                                            new_anchor.top_row(snapshot.buffer_snapshot()),
-                                            new_anchor.offset,
-                                        );
-                                    });
                                 })
                                 .ok();
                         });
