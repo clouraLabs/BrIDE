@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{Context as _, Result};
 use assistant_slash_command::{SlashCommandId, SlashCommandWorkingSet};
-use client::{Client, TypedEnvelope, proto, telemetry::Telemetry};
 use clock::ReplicaId;
 use collections::HashMap;
 use context_server::ContextServerId;
@@ -48,7 +47,6 @@ pub struct TextThreadStore {
     fs: Arc<dyn Fs>,
     languages: Arc<LanguageRegistry>,
     slash_commands: Arc<SlashCommandWorkingSet>,
-    telemetry: Arc<Telemetry>,
     _watch_updates: Task<Option<()>>,
     client: Arc<Client>,
     project: Entity<Project>,
@@ -143,7 +141,6 @@ impl TextThreadStore {
             fs: project.read(cx).fs().clone(),
             languages: project.read(cx).languages().clone(),
             slash_commands: Arc::default(),
-            telemetry: project.read(cx).client().telemetry().clone(),
             _watch_updates: Task::ready(None),
             client: project.read(cx).client(),
             project,
@@ -371,7 +368,7 @@ impl TextThreadStore {
             TextThread::local(
                 self.languages.clone(),
                 Some(self.project.clone()),
-                Some(self.telemetry.clone()),
+                None,
                 self.prompt_builder.clone(),
                 self.slash_commands.clone(),
                 cx,
@@ -391,7 +388,7 @@ impl TextThreadStore {
         let capability = project.capability();
         let language_registry = self.languages.clone();
         let project = self.project.clone();
-        let telemetry = self.telemetry.clone();
+        
         let prompt_builder = self.prompt_builder.clone();
         let slash_commands = self.slash_commands.clone();
         let request = self.client.request(proto::CreateContext { project_id });
@@ -408,7 +405,7 @@ impl TextThreadStore {
                     prompt_builder,
                     slash_commands,
                     Some(project),
-                    Some(telemetry),
+                    None,
                     cx,
                 )
             })?;
@@ -446,7 +443,7 @@ impl TextThreadStore {
         let fs = self.fs.clone();
         let languages = self.languages.clone();
         let project = self.project.clone();
-        let telemetry = self.telemetry.clone();
+        
         let load = cx.background_spawn({
             let path = path.clone();
             async move {
@@ -467,7 +464,7 @@ impl TextThreadStore {
                     prompt_builder,
                     slash_commands,
                     Some(project),
-                    Some(telemetry),
+                    None,
                     cx,
                 )
             })?;
@@ -554,7 +551,7 @@ impl TextThreadStore {
         let capability = project.capability();
         let language_registry = self.languages.clone();
         let project = self.project.clone();
-        let telemetry = self.telemetry.clone();
+        
         let request = self.client.request(proto::OpenContext {
             project_id,
             context_id: text_thread_id.to_proto(),
@@ -573,7 +570,7 @@ impl TextThreadStore {
                     prompt_builder,
                     slash_commands,
                     Some(project),
-                    Some(telemetry),
+                    None,
                     cx,
                 )
             })?;

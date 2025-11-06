@@ -1,17 +1,15 @@
 use crate::inline_prompt_editor::CodegenStatus;
-use client::telemetry::Telemetry;
 use futures::{SinkExt, StreamExt, channel::mpsc};
 use gpui::{App, AppContext as _, Context, Entity, EventEmitter, Task};
 use language_model::{
     ConfiguredModel, LanguageModelRegistry, LanguageModelRequest, report_assistant_event,
 };
 use std::{sync::Arc, time::Instant};
-use telemetry_events::{AssistantEventData, AssistantKind, AssistantPhase};
 use terminal::Terminal;
 
 pub struct TerminalCodegen {
     pub status: CodegenStatus,
-    pub telemetry: Option<Arc<Telemetry>>,
+    // telemetry removed,
     terminal: Entity<Terminal>,
     generation: Task<()>,
     pub message_id: Option<String>,
@@ -41,7 +39,7 @@ impl TerminalCodegen {
 
         let model_api_key = model.api_key(cx);
         let http_client = cx.http_client();
-        let telemetry = self.telemetry.clone();
+        let telemetry = Arc::new(());
         self.status = CodegenStatus::Pending;
         self.transaction = Some(TerminalTransaction::start(self.terminal.clone()));
         self.generation = cx.spawn(async move |this, cx| {

@@ -318,10 +318,6 @@ impl Render for EditPredictionButton {
                                 Tooltip::with_meta("Edit Predictions", None, tooltip_meta, cx)
                             })
                             .on_click(cx.listener(move |_, _, window, cx| {
-                                telemetry::event!(
-                                    "Pending ToS Clicked",
-                                    source = "Edit Prediction Status Button"
-                                );
                                 window.dispatch_action(
                                     zed_actions::OpenZedPredictOnboarding.boxed_clone(),
                                     cx,
@@ -738,15 +734,7 @@ impl EditPredictionButton {
                             provider.toggle_data_collection(cx);
 
                             if !enabled {
-                                telemetry::event!(
-                                    "Data Collection Enabled",
-                                    source = "Edit Prediction Status Menu"
-                                );
                             } else {
-                                telemetry::event!(
-                                    "Data Collection Disabled",
-                                    source = "Edit Prediction Status Menu"
-                                );
                             }
                         })
                 );

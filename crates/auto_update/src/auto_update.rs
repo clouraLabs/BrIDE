@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use client::{Client, TelemetrySettings};
 use db::RELEASE_CHANNEL;
 use db::kvp::KEY_VALUE_STORE;
 use gpui::{
@@ -755,27 +754,19 @@ async fn download_remote_server_binary(
 }
 
 fn build_remote_server_update_request_body(cx: &AsyncApp) -> Result<UpdateRequestBody> {
-    let (installation_id, release_channel, telemetry_enabled, is_staff) = cx.update(|cx| {
-        let telemetry = Client::global(cx).telemetry().clone();
-        let is_staff = telemetry.is_staff();
-        let installation_id = telemetry.installation_id();
+    let (installation_id, release_channel) = cx.update(|cx| {
+        let installation_id = None;
         let release_channel =
             ReleaseChannel::try_global(cx).map(|release_channel| release_channel.display_name());
-        let telemetry_enabled = TelemetrySettings::get_global(cx).metrics;
 
-        (
-            installation_id,
-            release_channel,
-            telemetry_enabled,
-            is_staff,
-        )
+        (installation_id, release_channel)
     })?;
 
     Ok(UpdateRequestBody {
         installation_id,
         release_channel,
-        telemetry: telemetry_enabled,
-        is_staff,
+        telemetry: false,
+        is_staff: false,
         destination: "remote",
     })
 }
@@ -788,27 +779,19 @@ async fn download_release(
 ) -> Result<()> {
     let mut target_file = File::create(&target_path).await?;
 
-    let (installation_id, release_channel, telemetry_enabled, is_staff) = cx.update(|cx| {
-        let telemetry = Client::global(cx).telemetry().clone();
-        let is_staff = telemetry.is_staff();
-        let installation_id = telemetry.installation_id();
+    let (installation_id, release_channel) = cx.update(|cx| {
+        let installation_id = None;
         let release_channel =
             ReleaseChannel::try_global(cx).map(|release_channel| release_channel.display_name());
-        let telemetry_enabled = TelemetrySettings::get_global(cx).metrics;
 
-        (
-            installation_id,
-            release_channel,
-            telemetry_enabled,
-            is_staff,
-        )
+        (installation_id, release_channel)
     })?;
 
     let request_body = AsyncBody::from(serde_json::to_string(&UpdateRequestBody {
         installation_id,
         release_channel,
-        telemetry: telemetry_enabled,
-        is_staff,
+        telemetry: false,
+        is_staff: false,
         destination: "local",
     })?);
 

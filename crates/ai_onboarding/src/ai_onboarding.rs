@@ -97,7 +97,6 @@ impl ZedAiOnboarding {
                         .icon_size(IconSize::Small)
                         .tooltip(Tooltip::text("Dismiss"))
                         .on_click(move |_, window, cx| {
-                            telemetry::event!("Banner Dismissed", source = "AI Onboarding",);
                             callback(window, cx)
                         }),
                 )
@@ -126,7 +125,6 @@ impl ZedAiOnboarding {
                     .on_click({
                         let callback = self.sign_in.clone();
                         move |_, window, cx| {
-                            telemetry::event!("Start Trial Clicked", state = "pre-sign-in");
                             callback(window, cx)
                         }
                     }),
@@ -164,10 +162,6 @@ impl ZedAiOnboarding {
                                 .full_width()
                                 .style(ButtonStyle::Tinted(ui::TintColor::Accent))
                                 .on_click(move |_, _window, cx| {
-                                    telemetry::event!(
-                                        "Upgrade To Pro Clicked",
-                                        state = "young-account"
-                                    );
                                     cx.open_url(&zed_urls::upgrade_to_zed_pro_url(cx))
                                 }),
                         ),
@@ -225,10 +219,6 @@ impl ZedAiOnboarding {
                                 .full_width()
                                 .style(ButtonStyle::Tinted(ui::TintColor::Accent))
                                 .on_click(move |_, _window, cx| {
-                                    telemetry::event!(
-                                        "Start Trial Clicked",
-                                        state = "post-sign-in"
-                                    );
                                     cx.open_url(&zed_urls::start_trial_url(cx))
                                 }),
                         ),

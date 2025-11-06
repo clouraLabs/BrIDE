@@ -3,7 +3,6 @@ use crate::{
 };
 use agent_settings::AgentSettings;
 use anyhow::{Context as _, Result};
-use client::telemetry::Telemetry;
 use cloud_llm_client::CompletionIntent;
 use collections::HashSet;
 use editor::{Anchor, AnchorRangeExt, MultiBuffer, MultiBufferSnapshot, ToOffset as _, ToPoint};
@@ -33,7 +32,6 @@ use std::{
     time::Instant,
 };
 use streaming_diff::{CharOperation, LineDiff, LineOperation, StreamingDiff};
-use telemetry_events::{AssistantEventData, AssistantKind, AssistantPhase};
 
 pub struct BufferCodegen {
     alternatives: Vec<Entity<CodegenAlternative>>,
@@ -46,7 +44,6 @@ pub struct BufferCodegen {
     context_store: Entity<ContextStore>,
     project: WeakEntity<Project>,
     prompt_store: Option<Entity<PromptStore>>,
-    telemetry: Arc<Telemetry>,
     builder: Arc<PromptBuilder>,
     pub is_insertion: bool,
 }
@@ -59,7 +56,6 @@ impl BufferCodegen {
         context_store: Entity<ContextStore>,
         project: WeakEntity<Project>,
         prompt_store: Option<Entity<PromptStore>>,
-        telemetry: Arc<Telemetry>,
         builder: Arc<PromptBuilder>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -168,7 +164,7 @@ impl BufferCodegen {
                     Some(self.context_store.clone()),
                     self.project.clone(),
                     self.prompt_store.clone(),
-                    Some(self.telemetry.clone()),
+                    None,
                     self.builder.clone(),
                     cx,
                 )
@@ -246,7 +242,7 @@ pub struct CodegenAlternative {
     context_store: Option<Entity<ContextStore>>,
     project: WeakEntity<Project>,
     prompt_store: Option<Entity<PromptStore>>,
-    telemetry: Option<Arc<Telemetry>>,
+    telemetry: None,
     _subscription: gpui::Subscription,
     builder: Arc<PromptBuilder>,
     active: bool,
@@ -267,7 +263,7 @@ impl CodegenAlternative {
         context_store: Option<Entity<ContextStore>>,
         project: WeakEntity<Project>,
         prompt_store: Option<Entity<PromptStore>>,
-        telemetry: Option<Arc<Telemetry>>,
+        telemetry: None,
         builder: Arc<PromptBuilder>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -513,7 +509,7 @@ impl CodegenAlternative {
         }
 
         let http_client = cx.http_client();
-        let telemetry = self.telemetry.clone();
+        let telemetry = Arc::new(());
         let language_name = {
             let multibuffer = self.buffer.read(cx);
             let snapshot = multibuffer.snapshot(cx);
@@ -733,13 +729,6 @@ impl CodegenAlternative {
                     this.completion = Some(completion.lock().clone());
                     if let Some(usage) = token_usage {
                         let usage = usage.lock();
-                        telemetry::event!(
-                            "Inline Assistant Completion",
-                            model = model_telemetry_id,
-                            model_provider = model_provider_id,
-                            input_tokens = usage.input_tokens,
-                            output_tokens = usage.output_tokens,
-                        )
                     }
                     cx.emit(CodegenEvent::Finished);
                     cx.notify();

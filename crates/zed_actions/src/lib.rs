@@ -63,8 +63,6 @@ actions!(
         OpenDocs,
         /// Views open source licenses.
         OpenLicenses,
-        /// Opens the telemetry log.
-        OpenTelemetryLog,
     ]
 );
 

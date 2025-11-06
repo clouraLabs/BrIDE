@@ -3469,10 +3469,7 @@ impl ProjectPanel {
                     this.state.selection = current_selection;
                 }
                 let elapsed = now.elapsed();
-                if this.last_reported_update.elapsed() > Duration::from_secs(3600) {
-                    telemetry::event!(
-                        "Project Panel Updated",
-                        elapsed_ms = elapsed.as_millis() as u64,
+                if this.last_reported_update.elapsed() > Duration::from_secs(3600) { as u64,
                         worktree_entries = this
                             .state
                             .visible_entries

@@ -177,13 +177,6 @@ impl ThreadFeedbackState {
         };
         cx.background_spawn(async move {
             let thread = task.await?;
-            telemetry::event!(
-                "Agent Thread Rated",
-                session_id = session_id,
-                rating = rating,
-                agent = agent_name,
-                thread = thread
-            );
             anyhow::Ok(())
         })
         .detach_and_log_err(cx);
@@ -210,13 +203,6 @@ impl ThreadFeedbackState {
         let task = telemetry.thread_data(&session_id, cx);
         cx.background_spawn(async move {
             let thread = task.await?;
-            telemetry::event!(
-                "Agent Thread Feedback Comments",
-                session_id = session_id,
-                comments = comments,
-                agent = agent_name,
-                thread = thread
-            );
             anyhow::Ok(())
         })
         .detach_and_log_err(cx);
@@ -1196,7 +1182,6 @@ impl AcpThreadView {
                 });
                 drop(guard);
 
-                telemetry::event!("Agent Message Sent", agent = agent_telemetry_id);
 
                 thread.send(contents, cx)
             })?;
@@ -1559,14 +1544,9 @@ impl AcpThreadView {
                                     let result = authenticate.await;
 
                                     match &result {
-                                        Ok(_) => telemetry::event!(
-                                            "Authenticate Agent Succeeded",
-                                            agent = agent.telemetry_id()
+                                        Ok(_) =>
                                         ),
-                                        Err(_) => {
-                                            telemetry::event!(
-                                                "Authenticate Agent Failed",
-                                                agent = agent.telemetry_id(),
+                                        Err(_) => {,
                                             )
                                         }
                                     }
@@ -1712,14 +1692,9 @@ impl AcpThreadView {
                     let result = authenticate.await;
 
                     match &result {
-                        Ok(_) => telemetry::event!(
-                            "Authenticate Agent Succeeded",
-                            agent = agent.telemetry_id()
+                        Ok(_) =>
                         ),
-                        Err(_) => {
-                            telemetry::event!(
-                                "Authenticate Agent Failed",
-                                agent = agent.telemetry_id(),
+                        Err(_) => {,
                             )
                         }
                     }
@@ -3484,10 +3459,7 @@ impl AcpThreadView {
                                             },
                                         )
                                         .on_click({
-                                            cx.listener(move |this, _, window, cx| {
-                                                telemetry::event!(
-                                                    "Authenticate Agent Started",
-                                                    agent = this.agent.telemetry_id(),
+                                            cx.listener(move |this, _, window, cx| {,
                                                     method = method_id
                                                 );
 
@@ -4450,7 +4422,6 @@ impl AcpThreadView {
                 .ok();
         }
 
-        telemetry::event!("Follow Agent Selected", following = !following);
     }
 
     fn render_follow_toggle(&self, cx: &mut Context<Self>) -> impl IntoElement {
