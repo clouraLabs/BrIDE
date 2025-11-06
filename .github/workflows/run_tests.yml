@@ -1,6 +1,8 @@
 # Generated from xtask::workflows::run_tests
 # Rebuild with `cargo xtask workflows`.
 name: run_tests
+permissions:
+  contents: read
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: '1'
