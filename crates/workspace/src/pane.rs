@@ -964,7 +964,6 @@ impl Pane {
             }
 
             if let Some(text) = new_item.telemetry_event_text(cx) {
-                telemetry::event!(text);
             }
 
             pane.add_item_inner(
@@ -1183,7 +1182,6 @@ impl Pane {
         cx: &mut Context<Self>,
     ) {
         if let Some(text) = item.telemetry_event_text(cx) {
-            telemetry::event!(text);
         }
 
         self.add_item_inner(

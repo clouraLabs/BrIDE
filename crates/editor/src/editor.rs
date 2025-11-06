@@ -86,7 +86,6 @@ use code_context_menus::{
 };
 use collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use convert_case::{Case, Casing};
-use dap::TelemetrySpawnLocation;
 use display_map::*;
 use edit_prediction::{EditPredictionProvider, EditPredictionProviderHandle};
 use editor_settings::{GoToDefinitionFallback, Minimap as MinimapSettings};
@@ -812,6 +811,22 @@ impl MinimapVisibility {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BufferSerialization {
+    All,
+    NonDirtyBuffers,
+}
+
+impl BufferSerialization {
+    fn new(restore_unsaved_buffers: bool) -> Self {
+        if restore_unsaved_buffers {
+            Self::All
+        } else {
+            Self::NonDirtyBuffers
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 struct RunnableTasks {
     templates: Vec<(TaskSourceKind, TaskTemplate)>,
@@ -1129,7 +1144,7 @@ pub struct Editor {
     show_git_blame_inline_delay_task: Option<Task<()>>,
     git_blame_inline_enabled: bool,
     render_diff_hunk_controls: RenderDiffHunkControlsFn,
-    serialize_dirty_buffers: bool,
+    buffer_serialization: Option<BufferSerialization>,
     show_selection_menu: Option<bool>,
     blame: Option<Entity<GitBlame>>,
     blame_subscription: Option<Subscription>,
@@ -2205,10 +2220,13 @@ impl Editor {
             git_blame_inline_enabled: full_mode
                 && ProjectSettings::get_global(cx).git.inline_blame.enabled,
             render_diff_hunk_controls: Arc::new(render_diff_hunk_controls),
-            serialize_dirty_buffers: !is_minimap
-                && ProjectSettings::get_global(cx)
-                    .session
-                    .restore_unsaved_buffers,
+            buffer_serialization: is_minimap.not().then(|| {
+                BufferSerialization::new(
+                    ProjectSettings::get_global(cx)
+                        .session
+                        .restore_unsaved_buffers,
+                )
+            }),
             blame: None,
             blame_subscription: None,
             tasks: BTreeMap::default(),
@@ -2298,6 +2316,15 @@ impl Editor {
                     if *local {
                         editor.hide_signature_help(cx, SignatureHelpHiddenBy::Escape);
                         editor.inline_blame_popover.take();
+                        let new_anchor = editor.scroll_manager.anchor();
+                        let snapshot = editor.snapshot(window, cx);
+                        editor.update_restoration_data(cx, move |data| {
+                            data.scroll_position = (
+                                new_anchor.top_row(snapshot.buffer_snapshot()),
+                                new_anchor.offset,
+                            );
+                        });
+
                         editor.post_scroll_update = cx.spawn_in(window, async move |editor, cx| {
                             cx.background_executor()
                                 .timer(Duration::from_millis(50))
@@ -2310,15 +2337,6 @@ impl Editor {
                                         InlayHintRefreshReason::NewLinesShown,
                                         cx,
                                     );
-
-                                    let new_anchor = editor.scroll_manager.anchor();
-                                    let snapshot = editor.snapshot(window, cx);
-                                    editor.update_restoration_data(cx, move |data| {
-                                        data.scroll_position = (
-                                            new_anchor.top_row(snapshot.buffer_snapshot()),
-                                            new_anchor.offset,
-                                        );
-                                    });
                                 })
                                 .ok();
                         });
@@ -2752,6 +2770,14 @@ impl Editor {
         self.workspace.as_ref()?.0.upgrade()
     }
 
+    /// Returns the workspace serialization ID if this editor should be serialized.
+    fn workspace_serialization_id(&self, _cx: &App) -> Option<WorkspaceId> {
+        self.workspace
+            .as_ref()
+            .filter(|_| self.should_serialize_buffer())
+            .and_then(|workspace| workspace.1)
+    }
+
     pub fn title<'a>(&self, cx: &'a App) -> Cow<'a, str> {
         self.buffer().read(cx).title(cx)
     }
@@ -3000,6 +3026,20 @@ impl Editor {
         self.auto_replace_emoji_shortcode = auto_replace;
     }
 
+    pub fn set_should_serialize(&mut self, should_serialize: bool, cx: &App) {
+        self.buffer_serialization = should_serialize.then(|| {
+            BufferSerialization::new(
+                ProjectSettings::get_global(cx)
+                    .session
+                    .restore_unsaved_buffers,
+            )
+        })
+    }
+
+    fn should_serialize_buffer(&self) -> bool {
+        self.buffer_serialization.is_some()
+    }
+
     pub fn toggle_edit_predictions(
         &mut self,
         _: &ToggleEditPrediction,
@@ -3216,8 +3256,7 @@ impl Editor {
             });
 
             if WorkspaceSettings::get(None, cx).restore_on_startup != RestoreOnStartupBehavior::None
-                && let Some(workspace_id) =
-                    self.workspace.as_ref().and_then(|workspace| workspace.1)
+                && let Some(workspace_id) = self.workspace_serialization_id(cx)
             {
                 let snapshot = self.buffer().read(cx).snapshot(cx);
                 let selections = selections.clone();
@@ -3282,7 +3321,7 @@ impl Editor {
             data.folds = inmemory_folds;
         });
 
-        let Some(workspace_id) = self.workspace.as_ref().and_then(|workspace| workspace.1) else {
+        let Some(workspace_id) = self.workspace_serialization_id(cx) else {
             return;
         };
         let background_executor = cx.background_executor().clone();
@@ -7523,10 +7562,7 @@ impl Editor {
         let event_type = match accepted {
             true => "Edit Prediction Accepted",
             false => "Edit Prediction Discarded",
-        };
-        telemetry::event!(
-            event_type,
-            provider = provider.name(),
+        };,
             prediction_id = id,
             suggestion_accepted = accepted,
             file_extension = extension,
@@ -21179,8 +21215,9 @@ impl Editor {
         }
 
         let project_settings = ProjectSettings::get_global(cx);
-        self.serialize_dirty_buffers =
-            !self.mode.is_minimap() && project_settings.session.restore_unsaved_buffers;
+        self.buffer_serialization = self
+            .should_serialize_buffer()
+            .then(|| BufferSerialization::new(project_settings.session.restore_unsaved_buffers));
 
         if self.mode.is_full() {
             let show_inline_diagnostics = project_settings.diagnostics.inline.enabled;
@@ -21506,26 +21543,9 @@ impl Editor {
         let project = project.read(cx);
         let event_type = reported_event.event_type();
 
-        if let ReportEditorEvent::Saved { auto_saved } = reported_event {
-            telemetry::event!(
-                event_type,
-                type = if auto_saved {"autosave"} else {"manual"},
-                file_extension,
-                vim_mode,
-                copilot_enabled,
-                copilot_enabled_for_language,
-                edit_predictions_provider,
-                is_via_ssh = project.is_via_remote_server(),
+        if let ReportEditorEvent::Saved { auto_saved } = reported_event {,
             );
-        } else {
-            telemetry::event!(
-                event_type,
-                file_extension,
-                vim_mode,
-                copilot_enabled,
-                copilot_enabled_for_language,
-                edit_predictions_provider,
-                is_via_ssh = project.is_via_remote_server(),
+        } else {,
             );
         };
     }

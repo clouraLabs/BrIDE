@@ -9,7 +9,6 @@ use crate::{
 use agent::HistoryStore;
 use agent_settings::AgentSettings;
 use anyhow::{Context as _, Result};
-use client::telemetry::Telemetry;
 use cloud_llm_client::CompletionIntent;
 use collections::{HashMap, VecDeque};
 use editor::{MultiBuffer, actions::SelectAll};
@@ -23,7 +22,6 @@ use language_model::{
 use project::Project;
 use prompt_store::{PromptBuilder, PromptStore};
 use std::sync::Arc;
-use telemetry_events::{AssistantEventData, AssistantKind, AssistantPhase};
 use terminal_view::TerminalView;
 use ui::prelude::*;
 use util::ResultExt;
@@ -32,7 +30,6 @@ use workspace::{Toast, Workspace, notifications::NotificationId};
 pub fn init(
     fs: Arc<dyn Fs>,
     prompt_builder: Arc<PromptBuilder>,
-    telemetry: Arc<Telemetry>,
     cx: &mut App,
 ) {
     cx.set_global(TerminalInlineAssistant::new(fs, prompt_builder, telemetry));
@@ -45,7 +42,7 @@ pub struct TerminalInlineAssistant {
     next_assist_id: TerminalInlineAssistId,
     assists: HashMap<TerminalInlineAssistId, TerminalInlineAssist>,
     prompt_history: VecDeque<String>,
-    telemetry: Option<Arc<Telemetry>>,
+    telemetry: None,
     fs: Arc<dyn Fs>,
     prompt_builder: Arc<PromptBuilder>,
 }
@@ -56,13 +53,12 @@ impl TerminalInlineAssistant {
     pub fn new(
         fs: Arc<dyn Fs>,
         prompt_builder: Arc<PromptBuilder>,
-        telemetry: Arc<Telemetry>,
     ) -> Self {
         Self {
             next_assist_id: TerminalInlineAssistId::default(),
             assists: HashMap::default(),
             prompt_history: VecDeque::default(),
-            telemetry: Some(telemetry),
+            telemetry: None,
             fs,
             prompt_builder,
         }
@@ -88,7 +84,7 @@ impl TerminalInlineAssistant {
             )
         });
         let context_store = cx.new(|_cx| ContextStore::new(project));
-        let codegen = cx.new(|_| TerminalCodegen::new(terminal, self.telemetry.clone()));
+        let codegen = cx.new(|_| TerminalCodegen::new(terminal, Arc::new(())));
 
         let prompt_editor = cx.new(|cx| {
             PromptEditor::new_terminal(

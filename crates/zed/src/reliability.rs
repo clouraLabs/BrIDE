@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use client::{TelemetrySettings, telemetry::MINIDUMP_ENDPOINT};
 use futures::AsyncReadExt;
 use gpui::{App, AppContext as _};
 use http_client::{self, HttpClient, HttpClientWithUrl};
@@ -11,69 +10,18 @@ use smol::stream::StreamExt;
 use std::{ffi::OsStr, fs, sync::Arc};
 use util::ResultExt;
 
-pub fn init(http_client: Arc<HttpClientWithUrl>, installation_id: Option<String>, cx: &mut App) {
-    #[cfg(target_os = "macos")]
-    monitor_main_thread_hangs(http_client.clone(), installation_id.clone(), cx);
-
-    if client::TelemetrySettings::get_global(cx).diagnostics {
-        let client = http_client.clone();
-        let id = installation_id.clone();
-        cx.background_spawn(async move {
-            upload_previous_minidumps(client, id).await.warn_on_err();
-        })
-        .detach()
-    }
-
-    cx.observe_new(move |project: &mut Project, _, cx| {
-        let http_client = http_client.clone();
-        let installation_id = installation_id.clone();
-
-        let Some(remote_client) = project.remote_client() else {
-            return;
-        };
-        remote_client.update(cx, |client, cx| {
-            if !TelemetrySettings::get_global(cx).diagnostics {
-                return;
-            }
-            let request = client.proto_client().request(proto::GetCrashFiles {});
-            cx.background_spawn(async move {
-                let GetCrashFilesResponse { crashes } = request.await?;
-
-                let Some(endpoint) = MINIDUMP_ENDPOINT.as_ref() else {
-                    return Ok(());
-                };
-                for CrashReport {
-                    metadata,
-                    minidump_contents,
-                } in crashes
-                {
-                    if let Some(metadata) = serde_json::from_str(&metadata).log_err() {
-                        upload_minidump(
-                            http_client.clone(),
-                            endpoint,
-                            minidump_contents,
-                            &metadata,
-                            installation_id.clone(),
-                        )
-                        .await
-                        .log_err();
-                    }
-                }
-
-                anyhow::Ok(())
-            })
-            .detach_and_log_err(cx);
-        })
-    })
-    .detach();
+pub fn init(_http_client: Arc<HttpClientWithUrl>, _installation_id: Option<String>, cx: &mut App) {
+    // Telemetry has been removed from this codebase
 }
 
 #[cfg(target_os = "macos")]
 pub fn monitor_main_thread_hangs(
-    http_client: Arc<HttpClientWithUrl>,
-    installation_id: Option<String>,
-    cx: &App,
+    _http_client: Arc<HttpClientWithUrl>,
+    _installation_id: Option<String>,
+    _cx: &App,
 ) {
+    // Telemetry has been removed
+}
     // This is too noisy to ship to stable for now.
     if !matches!(
         ReleaseChannel::global(cx),
@@ -347,10 +295,7 @@ async fn upload_minidump(
         form = form.text("sentry[user][id]", id)
     }
 
-    ::telemetry::event!(
-        "Minidump Uploaded",
-        panic_message = panic_message,
-        crashed_version = metadata.init.zed_version.clone(),
+    ::,
         commit_sha = metadata.init.commit_sha.clone(),
     );
 

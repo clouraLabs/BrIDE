@@ -3,7 +3,6 @@ mod rate_limiter;
 mod registry;
 mod request;
 mod role;
-mod telemetry;
 
 #[cfg(any(test, feature = "test-support"))]
 pub mod fake_provider;
@@ -34,7 +33,6 @@ pub use crate::rate_limiter::*;
 pub use crate::registry::*;
 pub use crate::request::*;
 pub use crate::role::*;
-pub use crate::telemetry::*;
 
 pub const ANTHROPIC_PROVIDER_ID: LanguageModelProviderId =
     LanguageModelProviderId::new("anthropic");

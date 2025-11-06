@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use settings::{
     DefaultAgentView as DefaultView, LanguageModelProviderSetting, LanguageModelSelection,
 };
-use zed_actions::OpenBrowser;
+
 use zed_actions::agent::{OpenClaudeCodeOnboardingModal, ReauthenticateAgent};
 
 use crate::ui::{AcpOnboardingModal, ClaudeCodeOnboardingModal};
@@ -792,7 +792,6 @@ impl AgentPanel {
     }
 
     fn new_text_thread(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        telemetry::event!("Agent Thread Started", agent = "zed-text");
 
         let context = self
             .text_thread_store
@@ -899,7 +898,6 @@ impl AgentPanel {
             let server = ext_agent.server(fs, history);
 
             if !loading {
-                telemetry::event!("Agent Thread Started", agent = server.telemetry_id());
             }
 
             this.update_in(cx, |this, window, cx| {
@@ -1824,7 +1822,6 @@ impl AgentPanel {
             .menu({
                 let menu = self.agent_navigation_menu.clone();
                 move |window, cx| {
-                    telemetry::event!("View Thread History Clicked");
 
                     if let Some(menu) = menu.as_ref() {
                         menu.update(cx, |_, cx| {
@@ -1900,7 +1897,6 @@ impl AgentPanel {
                     .unwrap_or_default();
 
                 move |window, cx| {
-                    telemetry::event!("New Thread Clicked");
 
                     let active_thread = active_thread.clone();
                     Some(ContextMenu::build(window, cx, |menu, _window, cx| {
@@ -2131,12 +2127,20 @@ impl AgentPanel {
                                 menu
                             })
                             .separator()
-                            .link(
-                                "Add Other Agents",
-                                OpenBrowser {
-                                    url: zed_urls::external_agents_docs(cx),
-                                }
-                                .boxed_clone(),
+                            .item(
+                                ContextMenuEntry::new("Add More Agents")
+                                    .icon(IconName::Plus)
+                                    .icon_color(Color::Muted)
+                                    .handler({
+                                        move |window, cx| {
+                                            window.dispatch_action(Box::new(zed_actions::Extensions {
+                                                category_filter: Some(
+                                                    zed_actions::ExtensionCategoryFilter::AgentServers,
+                                                ),
+                                                id: None,
+                                            }), cx)
+                                        }
+                                    }),
                             )
                     }))
                 }

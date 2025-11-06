@@ -141,7 +141,6 @@ impl Render for OnboardingBanner {
                             ),
                     )
                     .on_click(cx.listener(|this, _, window, cx| {
-                        telemetry::event!("Banner Clicked", source = this.source);
                         this.dismiss(cx);
                         window.dispatch_action(this.details.action.boxed_clone(), cx)
                     })),
@@ -151,7 +150,6 @@ impl Render for OnboardingBanner {
                     IconButton::new("close", IconName::Close)
                         .icon_size(IconSize::Indicator)
                         .on_click(cx.listener(|this, _, _window, cx| {
-                            telemetry::event!("Banner Dismissed", source = this.source);
                             this.dismiss(cx)
                         }))
                         .tooltip(|_window, cx| {
